@@ -99,7 +99,7 @@ String getTfRemoteArgs(Map params = null) {
 
 String getTfVars(Map params = null) {
     // Add values from JSON in 'TF_VARS'
-    def varMap = getTfVarsMap(params)
+    Map<String, Object> varMap = getTfVarsMap(params)
 
     // Pull in all environment variables prefixed with 'TF_VAR_'
     params?.each { String key, String value ->
@@ -118,11 +118,11 @@ String getTfVars(Map params = null) {
         }
     }
 
-    def vars = new StringBuilder()
+    StringBuilder vars = new StringBuilder()
     varMap.each { key, value ->
         vars << " -var ${key}=${value}"
     }
-    return vars
+    return vars.toString()
 }
 
 Map<String, Object> getTfVarsMap(Map params = null) {
