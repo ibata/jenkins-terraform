@@ -58,7 +58,7 @@ def terraform(Map params, String tfArgs) {
 }
 
 String getTerraformCmd(Map params = null) {
-    "docker run --rm -v ${getWorkingDirectory params}:${getTempDirectory params} -w=${getTempDirectory params} -e AWS_ACCESS_KEY_ID=${getAwsAccessKey params} -e AWS_SECRET_ACCESS_KEY=${getAwsSecretKey(params)} --entrypoint=/go/bin/terraform hashicorp/terraform:${getTfVersion params}"
+    "docker run --rm -v ${getWorkingDirectory params}:${getTempDirectory params} -w=${getTempDirectory params} -e AWS_ACCESS_KEY_ID=${getAwsAccessKey params} -e AWS_SECRET_ACCESS_KEY=${getAwsSecretKey(params)} hashicorp/terraform:${getTfVersion params}"
 }
 
 String getId(Map params = null) {
