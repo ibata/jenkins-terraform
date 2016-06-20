@@ -145,11 +145,11 @@ Map<String, Object> getTfVarsMap(Map params = null) {
     return result
 }
 
-String getGitUrl(Map env = null) {
-    "${env.GIT_URL}"
+static String getGitUrl(Map env = null) {
+    "${env.GIT_URL}" as String
 }
 
-String getGitCredsId(Map env = null) {
-    "${env.GIT_CREDS_ID}"
+static String getGitCredsId(Map env = null) {
+    "${env.GIT_CREDS_ID}" as String
 }
 
