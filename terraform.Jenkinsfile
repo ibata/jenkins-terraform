@@ -20,9 +20,9 @@ import groovy.json.JsonSlurper
 
 node {
 
-    git credentialsId: gitCredsId, url: gitUrl
+    git credentialsId: getGitCredsId(env), url: getGitUrl(env)
 
-    withCredentials([[$class: 'StringBinding', credentialsId: awsSecretKeyId, variable: 'awsSecretKey']]) {
+    withCredentials([[$class: 'StringBinding', credentialsId: getAwsSecretKeyId(env), variable: 'awsSecretKey']]) {
 
         stage 'Remote Config'
         tfRemoteConfig env
@@ -41,12 +41,12 @@ node {
     }
 }
 
-def tfRemoteConfig(Map params) {
-    def run = getTerraformCmd params
+def tfRemoteConfig(Map env) {
+    def run = getTerraformCmd env
     // Check if we're already working with a remote state. If not, pull the remote state.
-    def remoteArgs = getTfRemoteArgs params
+    def remoteArgs = getTfRemoteArgs env
 
-    sh "(head -n20 ${getWorkingDirectory params}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${run} remote config ${remoteArgs}"
+    sh "(head -n20 ${getWorkingDirectory env}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${run} remote config ${remoteArgs}"
 }
 
 def terraform(String tfArgs) {
