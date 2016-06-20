@@ -93,7 +93,7 @@ String getTfRemoteArgs(Map params = null) {
     if (env.TF_REMOTE_BACKEND == "s3") {
         "-backend=${env.TF_REMOTE_BACKEND} -backend-config='bucket=${env.TF_REMOTE_S3_BUCKET}' -backend-config='key=${env.TF_REMOTE_S3_KEY}' -backend-config='${env.TF_REMOTE_S3_REGION}"
     } else {
-        params?.tfRemoteArgs ?: "${TF_REMOTE_ARGS}"
+        params?.tfRemoteArgs ?: "${env.TF_REMOTE_ARGS}"
     }
 }
 
