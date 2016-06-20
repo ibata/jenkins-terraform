@@ -20,125 +20,136 @@ import groovy.json.JsonSlurper
 
 node {
 
-  git credentialsId: gitCredsId, url: gitUrl
+    git credentialsId: gitCredsId, url: gitUrl
 
-  withCredentials([[$class: 'StringBinding', credentialsId: awsSecretKeyId, variable: 'awsSecretKey']]) {
+    withCredentials([[$class: 'StringBinding', credentialsId: awsSecretKeyId, variable: 'awsSecretKey']]) {
 
-    stage 'Remote Config'
-    tfRemoteConfig awsSecretKey: env.awsSecretKey
+        stage 'Remote Config'
+        tfRemoteConfig awsSecretKey: env.awsSecretKey
 
-    stage 'Get'
-    // Make sure we have the latest version of any modules
-    sh "rm -R ${workingDirectory}/.terraform/modules"
-    terraform "get"
+        stage 'Get'
+        // Make sure we have the latest version of any modules
+        sh "rm -R ${workingDirectory}/.terraform/modules"
+        terraform "get"
 
-    stage 'Plan'
-    terraform "plan", awsSecretKey: env.awsSecretKey
-    input 'Apply the plan?'
+        stage 'Plan'
+        terraform "plan", awsSecretKey: env.awsSecretKey
+        input 'Apply the plan?'
 
-    stage 'Apply'
-    terraform "apply", awsSecretKey: env.awsSecretKey
-  }
+        stage 'Apply'
+        terraform "apply", awsSecretKey: env.awsSecretKey
+    }
 }
 
 def tfRemoteConfig(Map params) {
-  def run = getTerraformCmd params
-  // Check if we're already working with a remote state. If not, pull the remote state.
-  def config = getTfRemoteArgs params
+    def run = getTerraformCmd params
+    // Check if we're already working with a remote state. If not, pull the remote state.
+    def config = getTfRemoteArgs params
 
-  sh "(head -n20 ${getWorkingDirectory params}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${run} remote config ${config}"
+    sh "(head -n20 ${getWorkingDirectory params}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${run} remote config ${config}"
 }
 
 def terraform(String tfArgs) {
-  terraform(null, tfArgs)
+    terraform(null, tfArgs)
 }
 
 def terraform(Map params, String tfArgs) {
-  sh "${getTerraformCmd(params)} ${tfArgs} ${getTfVars params}"
+    sh "${getTerraformCmd(params)} ${tfArgs} ${getTfVars params}"
 }
 
 String getTerraformCmd(Map params = null) {
-  "docker run --rm -u `id -u jenkins` -v ${getWorkingDirectory params}:${getTempDirectory params} -w=${getTempDirectory params} -e AWS_ACCESS_KEY_ID=${getAwsAccessKey params} -e AWS_SECRET_ACCESS_KEY=${getAwsSecretKey(params)} --entrypoint=/go/bin/terraform hashicorp/terraform:${getTfVersion params}"
+    "docker run --rm -u `id -u jenkins` -v ${getWorkingDirectory params}:${getTempDirectory params} -w=${getTempDirectory params} -e AWS_ACCESS_KEY_ID=${getAwsAccessKey params} -e AWS_SECRET_ACCESS_KEY=${getAwsSecretKey(params)} --entrypoint=/go/bin/terraform hashicorp/terraform:${getTfVersion params}"
 }
 
 String getId(Map params = null) {
-  params?.id ?: "${env.JOB_NAME}-${env.BUILD_ID}"
+    params?.id ?: "${env.JOB_NAME}-${env.BUILD_ID}"
 }
 
 String getAwsAccessKey(Map params = null) {
-  params?.awsAccessKey ?: "${AWS_ACCESS_KEY}"
+    params?.awsAccessKey ?: "${AWS_ACCESS_KEY}"
 }
 
 String getAwsSecretKeyId(Map params = null) {
-  params?.awsSecretKeyId ?: "${AWS_SECRET_KEY_ID}"
+    params?.awsSecretKeyId ?: "${AWS_SECRET_KEY_ID}"
 }
 
 String getAwsSecretKey(Map params = null) {
-  params?.awsSecretKey ?: "${AWS_SECRET_KEY}"
+    params?.awsSecretKey ?: "${AWS_SECRET_KEY}"
 }
 
 String getTempDirectory(Map params = null) {
-  params?.tempDirectory ?: "/tmp/${id}"
+    params?.tempDirectory ?: "/tmp/${id}"
 }
 
 String getWorkingDirectory(Map params = null) {
-  params?.workingDirectory ?: "${pwd()}/${GIT_SUBDIR}"
+    params?.workingDirectory ?: "${pwd()}/${GIT_SUBDIR}"
 }
 
 String getTfVersion(Map params = null) {
-  params?.tfVersion ?: env.TF_VERSION ?: "latest"
+    params?.tfVersion ?: env.TF_VERSION ?: "latest"
 }
 
 String getTfRemoteArgs(Map params = null) {
-  if (env.TF_REMOTE_BACKEND == "s3") {
-    "-backend=${env.TF_REMOTE_BACKEND} -backend-config='bucket=${env.TF_REMOTE_S3_BUCKET}' -backend-config='key=${env.TF_REMOTE_S3_KEY}' -backend-config='${env.TF_REMOTE_S3_REGION}"
-  } else {
-    params?.tfRemoteArgs ?: "${TF_REMOTE_ARGS}"
-  }
+    if (env.TF_REMOTE_BACKEND == "s3") {
+        "-backend=${env.TF_REMOTE_BACKEND} -backend-config='bucket=${env.TF_REMOTE_S3_BUCKET}' -backend-config='key=${env.TF_REMOTE_S3_KEY}' -backend-config='${env.TF_REMOTE_S3_REGION}"
+    } else {
+        params?.tfRemoteArgs ?: "${TF_REMOTE_ARGS}"
+    }
 }
 
 String getTfVars(Map params = null) {
-  def varMap = getTfVarsMap(params)
+    // Add values from JSON in 'TF_VARS'
+    def varMap = getTfVarsMap(params)
 
-  params.each { String key, String value ->
-    if (key.startsWith("TF_VAR_")) {
-      varMap.put key.substring("TF_VAR_".length()), value
-      vars += " -var ${key.substring("TF_VAR_".length())}=${value}"
+    // Pull in all environment variables prefixed with 'TF_VAR_'
+    params.each { String key, String value ->
+        if (key.startsWith("TF_VAR_")) {
+            varMap.put key.substring("TF_VAR_".length()), value
+            vars += " -var ${key.substring("TF_VAR_".length())}=${value}"
+        }
     }
-  }
 
-  def vars = new StringBuilder()
-  varMap.each { key, value ->
-    vars << " -var ${key}=${value}"
-  }
-  return vars
+    // Look up any credentials where the variable name ends with '*'
+    varMap.each { String key, value ->
+        if (key.endsWith('*')) {
+            withCredentials([[$class: 'StringBinding', credentialsId: value, variable: 'cred']]) {
+                varMap.put key.substring(0, key.length()-1), env.cred
+            }
+        }
+    }
+
+    def vars = new StringBuilder()
+    varMap.each { key, value ->
+        vars << " -var ${key}=${value}"
+    }
+    return vars
 }
 
 Map<String, Object> getTfVarsMap(Map params = null) {
-  // Default to include the AWS Access Key and Secret Key
-  def result = [
-          aws_access_key: getAwsAccessKey(params),
-          aws_secret_key: getAwsSecretKey(params)
-  ]
+    // Default to include the AWS Access Key and Secret Key
+    def result = [
+            aws_access_key: getAwsAccessKey(params),
+            aws_secret_key: getAwsSecretKey(params)
+    ]
+    // Slurp the JSON from TF_VARS
+    def vars = params?.tfVars ?: env.TF_VARS
+    if (vars instanceof String) {
+        vars = new JsonSlurper().parseText(vars as String)
+    }
 
-  def vars = params?.tfVars ?: env.TF_VARS
-  if (vars instanceof String) {
-    vars = new JsonSlurper().parseText(vars as String)
-  }
-
-  if (vars instanceof Map<String, Object>) {
-    result.putAll(vars)
-  } else if (vars != null) {
-    throw new IllegalArgumentException("The TF_VARS environment variable or 'tfVars' parameter must be a String or a Map")
-  }
-  return result
+    if (vars instanceof Map<String, Object>) {
+        result.putAll(vars)
+    } else if (vars != null) {
+        throw new IllegalArgumentException("The TF_VARS environment variable or 'tfVars' parameter must be a String or a Map")
+    }
+    return result
 }
 
 String getGitUrl(Map params = null) {
-  params?.gitUrl ?: "${GIT_URL}"
+    params?.gitUrl ?: "${GIT_URL}"
 }
 
 String getGitCredsId(Map params = null) {
-  params?.gitCredsId ?: "${GIT_CREDS_ID}"
+    params?.gitCredsId ?: "${GIT_CREDS_ID}"
 }
 
