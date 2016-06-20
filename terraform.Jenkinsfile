@@ -102,7 +102,7 @@ String getTfVars(Map params = null) {
     def varMap = getTfVarsMap(params)
 
     // Pull in all environment variables prefixed with 'TF_VAR_'
-    params.each { String key, String value ->
+    params?.each { String key, String value ->
         if (key.startsWith("TF_VAR_")) {
             varMap.put key.substring("TF_VAR_".length()), value
             vars += " -var ${key.substring("TF_VAR_".length())}=${value}"
