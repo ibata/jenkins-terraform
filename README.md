@@ -1,6 +1,6 @@
 # Jenkins
 
-This repository contains reusable Jenkins components such as Jenkinsfile.
+This contains [Jenkins Pipeline](https://jenkins.io/solutions/pipeline/) `Jenkinsfile`s for use in managing the infrastructure with [Jenkins](http://jenkins.io).
 
 ## terraform.Jenkinsfile
 
