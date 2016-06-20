@@ -25,7 +25,7 @@ node {
     withCredentials([[$class: 'StringBinding', credentialsId: awsSecretKeyId, variable: 'awsSecretKey']]) {
 
         stage 'Remote Config'
-        tfRemoteConfig awsSecretKey: env.awsSecretKey
+        tfRemoteConfig env
 
         stage 'Get'
         // Make sure we have the latest version of any modules
@@ -33,20 +33,20 @@ node {
         terraform "get"
 
         stage 'Plan'
-        terraform "plan", awsSecretKey: env.awsSecretKey
+        terraform "plan"
         input 'Apply the plan?'
 
         stage 'Apply'
-        terraform "apply", awsSecretKey: env.awsSecretKey
+        terraform "apply"
     }
 }
 
 def tfRemoteConfig(Map params) {
     def run = getTerraformCmd params
     // Check if we're already working with a remote state. If not, pull the remote state.
-    def config = getTfRemoteArgs params
+    def remoteArgs = getTfRemoteArgs params
 
-    sh "(head -n20 ${getWorkingDirectory params}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${run} remote config ${config}"
+    sh "(head -n20 ${getWorkingDirectory params}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${run} remote config ${remoteArgs}"
 }
 
 def terraform(String tfArgs) {
@@ -61,48 +61,48 @@ String getTerraformCmd(Map params = null) {
     "docker run --rm -v ${getWorkingDirectory params}:${getTempDirectory params} -w=${getTempDirectory params} -e AWS_ACCESS_KEY_ID=${getAwsAccessKey params} -e AWS_SECRET_ACCESS_KEY=${getAwsSecretKey(params)} hashicorp/terraform:${getTfVersion params}"
 }
 
-String getId(Map params = null) {
-    params?.id ?: "${env.JOB_NAME}-${env.BUILD_ID}"
+String getId(Map env = null) {
+    "${env.JOB_NAME}-${env.BUILD_ID}"
 }
 
-String getAwsAccessKey(Map params = null) {
-    params?.awsAccessKey ?: "${AWS_ACCESS_KEY}"
+String getAwsAccessKey(Map env = null) {
+    "${env.AWS_ACCESS_KEY}"
 }
 
-String getAwsSecretKeyId(Map params = null) {
-    params?.awsSecretKeyId ?: "${AWS_SECRET_KEY_ID}"
+String getAwsSecretKeyId(Map env = null) {
+    "${env.AWS_SECRET_KEY_ID}"
 }
 
-String getAwsSecretKey(Map params = null) {
-    params?.awsSecretKey ?: "${AWS_SECRET_KEY}"
+String getAwsSecretKey(Map env = null) {
+    "${env.AWS_SECRET_KEY}"
 }
 
-String getTempDirectory(Map params = null) {
-    params?.tempDirectory ?: "/tmp/${id}"
+String getTempDirectory(Map env = null) {
+    "/tmp/${id env}"
 }
 
-String getWorkingDirectory(Map params = null) {
-    params?.workingDirectory ?: "${pwd()}/${GIT_SUBDIR}"
+String getWorkingDirectory(Map env = null) {
+    "${pwd()}/${env.GIT_SUBDIR}"
 }
 
-String getTfVersion(Map params = null) {
-    params?.tfVersion ?: env.TF_VERSION ?: "latest"
+String getTfVersion(Map env = null) {
+    env.TF_VERSION ?: "latest"
 }
 
-String getTfRemoteArgs(Map params = null) {
+String getTfRemoteArgs(Map env = null) {
     if (env.TF_REMOTE_BACKEND == "s3") {
         "-backend=${env.TF_REMOTE_BACKEND} -backend-config='bucket=${env.TF_REMOTE_S3_BUCKET}' -backend-config='key=${env.TF_REMOTE_S3_KEY}' -backend-config='${env.TF_REMOTE_S3_REGION}"
     } else {
-        params?.tfRemoteArgs ?: "${env.TF_REMOTE_ARGS}"
+        "${env.TF_REMOTE_ARGS}"
     }
 }
 
-String getTfVars(Map params = null) {
+String getTfVars(Map env = null) {
     // Add values from JSON in 'TF_VARS'
-    Map<String, Object> varMap = getTfVarsMap(params)
+    Map<String, Object> varMap = getTfVarsMap(env)
 
     // Pull in all environment variables prefixed with 'TF_VAR_'
-    params?.each { String key, String value ->
+    env?.each { String key, String value ->
         if (key.startsWith("TF_VAR_")) {
             varMap.put key.substring("TF_VAR_".length()), value
             vars += " -var ${key.substring("TF_VAR_".length())}=${value}"
@@ -145,11 +145,11 @@ Map<String, Object> getTfVarsMap(Map params = null) {
     return result
 }
 
-String getGitUrl(Map params = null) {
-    params?.gitUrl ?: "${GIT_URL}"
+String getGitUrl(Map env = null) {
+    "${env.GIT_URL}"
 }
 
-String getGitCredsId(Map params = null) {
-    params?.gitCredsId ?: "${GIT_CREDS_ID}"
+String getGitCredsId(Map env = null) {
+    "${env.GIT_CREDS_ID}"
 }
 
