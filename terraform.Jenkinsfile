@@ -20,7 +20,7 @@ import groovy.json.JsonSlurper
 
 node {
 
-    git credentialsId: env.GIT_CREDS_ID, url: getGitUrl(env)
+    git credentialsId: env.GIT_CREDS_ID, url: env.GIT_URL
 
     withCredentials([[$class: 'StringBinding', credentialsId: getAwsSecretKeyId(env), variable: 'awsSecretKey']]) {
 
