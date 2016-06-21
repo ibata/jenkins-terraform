@@ -19,6 +19,9 @@
 import groovy.json.JsonSlurper
 
 node {
+    println "working directory: ${workingDirectory}"
+    println "temp directory: ${tempDirectory}"
+
     git credentialsId: gitCredsId(), url: gitUrl()
 
     withCredentials([[$class: 'StringBinding', credentialsId: getAwsSecretKeyId(), variable: 'awsSecretKey']]) {
@@ -61,7 +64,7 @@ def terraform(String tfArgs) {
 }
 
 def terraform(Map params, String tfArgs) {
-    sh "${getTerraformCmd(params)} ${tfArgs} ${getTfVars params}"
+    sh "${getTerraformCmd params} ${tfArgs} ${getTfVars params}"
 }
 
 String getTerraformCmd(Map params = null) {
