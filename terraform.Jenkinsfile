@@ -41,6 +41,14 @@ node {
     }
 }
 
+def gitUrl(Map env = null) {
+    "${env.GIT_URL}"
+}
+
+def gitCredsId(Map env = null) {
+    "${env.GIT_CREDS_ID}"
+}
+
 def tfRemoteConfig(Map env) {
     def run = getTerraformCmd env
     // Check if we're already working with a remote state. If not, pull the remote state.
@@ -143,13 +151,5 @@ Map<String, Object> getTfVarsMap(Map env = null) {
         throw new IllegalArgumentException("The TF_VARS environment variable or 'tfVars' parameter must be a String or a Map")
     }
     return result
-}
-
-def gitUrl(Map env = null) {
-    "${env.GIT_URL}"
-}
-
-def gitCredsId(Map env = null) {
-    "${env.GIT_CREDS_ID}"
 }
 
