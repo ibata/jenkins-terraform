@@ -58,10 +58,6 @@ def tfRemoteConfig() {
 }
 
 def terraform(String tfArgs) {
-    terraform(null, tfArgs)
-}
-
-def terraform(Map params, String tfArgs) {
     withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}", "AWS_SECRET_ACCESS_KEY=${awsSecretKey}"]) {
         sh "${terraformCmd} ${tfArgs} ${tfVars}"
     }
