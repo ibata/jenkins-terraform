@@ -53,7 +53,7 @@ def tfRemoteConfig(Map env) {
     // Check if we're already working with a remote state. If not, pull the remote state.
     def remoteArgs = getTfRemoteArgs env
 
-    sh "(head -n20 ${getWorkingDirectory env}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${run} remote config ${remoteArgs}"
+    sh "(head -n20 ${workingDirectory}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${run} remote config ${remoteArgs}"
 }
 
 def terraform(String tfArgs) {
@@ -65,7 +65,7 @@ def terraform(Map params, String tfArgs) {
 }
 
 String getTerraformCmd(Map params = null) {
-    "docker run --rm -v ${getWorkingDirectory params}:${getTempDirectory params} -w=${getTempDirectory params} -e AWS_ACCESS_KEY_ID=${getAwsAccessKey params} -e AWS_SECRET_ACCESS_KEY=${getAwsSecretKey(params)} hashicorp/terraform:${getTfVersion params}"
+    "docker run --rm -v ${getWorkingDirectory}:${getTempDirectory params} -w=${getTempDirectory} -e AWS_ACCESS_KEY_ID=${getAwsAccessKey params} -e AWS_SECRET_ACCESS_KEY=${getAwsSecretKey(params)} hashicorp/terraform:${getTfVersion params}"
 }
 
 String getId() {
@@ -81,7 +81,7 @@ String getAwsSecretKeyId(Map env = null) {
 }
 
 String getAwsSecretKey(Map env = null) {
-    env?.awsSecretKey ?: "${env.AWS_SECRET_KEY}"
+    env?.awsSecretKey ?: "${AWS_SECRET_KEY}"
 }
 
 String getTempDirectory() {
