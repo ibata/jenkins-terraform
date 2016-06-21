@@ -72,7 +72,7 @@ String getTerraformCmd(Map params = null) {
 }
 
 String getId() {
-    "${JOB_NAME}-${BUILD_ID}"
+    "${env.JOB_NAME}-${env.BUILD_ID}"
 }
 
 String getAwsAccessKey(Map params = null) {
