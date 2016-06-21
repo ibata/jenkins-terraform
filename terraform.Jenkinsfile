@@ -133,7 +133,7 @@ String getTfVars(Map params = null) {
 
     StringBuilder vars = new StringBuilder()
     varMap.each { key, value ->
-        vars << " -var ${key}=${value}"
+        vars.append " -var ${key}=${value}"
     }
     return vars.toString()
 }
