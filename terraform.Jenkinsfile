@@ -52,6 +52,9 @@ def getGitCredsId() {
 }
 
 def tfRemoteConfig() {
+    println "AWS_ACCESS_KEY: '${awsAccessKey}'"
+    println "AWS_SECRET_ACCESS_KEY: '${awsSecretKey}'"
+
     withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}", "AWS_SECRET_ACCESS_KEY=${awsSecretKey}"]) {
         sh "(head -n20 ${workingDirectory}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${terraformCmd} remote config ${tfRemoteArgs}"
     }
