@@ -19,7 +19,8 @@
 import groovy.json.JsonSlurper
 
 node {
-    def gitCreds = gitCredsId(env)
+    println "env type: '${env.class.name}'"
+    def gitCreds = gitCredsId(GIT_URL: env.GIT_URL)
     git credentialsId: gitCreds, url: gitUrl(env)
 
     withCredentials([[$class: 'StringBinding', credentialsId: getAwsSecretKeyId(env), variable: 'awsSecretKey']]) {
