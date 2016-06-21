@@ -52,14 +52,18 @@ def getGitCredsId() {
 }
 
 def tfRemoteConfig() {
-    withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}", "AWS_SECRET_ACCESS_KEY=${awsSecretKey}"]) {
-        sh "(head -n20 ${workingDirectory}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${terraformCmd} remote config ${tfRemoteArgs}"
+    withCredentials([[$class: 'StringBinding', credentialsId: 'f6993baa-0888-41a9-82a2-0db64069b041', variable: 'AWS_SECRET_ACCESS_KEY']]) {
+        withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}"]) {
+            sh "(head -n20 ${workingDirectory}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${terraformCmd} remote config ${tfRemoteArgs}"
+        }
     }
 }
 
 def terraform(String tfArgs) {
-    withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}", "AWS_SECRET_ACCESS_KEY=${awsSecretKey}"]) {
-        sh "${terraformCmd} ${tfArgs}" // ${tfVars}"
+    withCredentials([[$class: 'StringBinding', credentialsId: 'f6993baa-0888-41a9-82a2-0db64069b041', variable: 'AWS_SECRET_ACCESS_KEY']]) {
+        withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}"]) {
+            sh "${terraformCmd} ${tfArgs}" // ${tfVars}"
+        }
     }
 }
 
@@ -75,19 +79,19 @@ String getAwsAccessKey() {
     "${AWS_ACCESS_KEY}"
 }
 
-String getAwsSecretKey(Map params = null) {
-    def value = ""
-    if (params?.awsSecretKey) {
-        value = params.awsSecretKey
-    } else {
-        if (AWS_SECRET_KEY_ID) {
-            withCredentials([[$class: 'StringBinding', credentialsId: AWS_SECRET_KEY_ID, variable: 'awsSecretKey']]) {
-                value = "${env.awsSecretKey}"
-            }
-        }
-    }
-    value
-}
+//String getAwsSecretKey(Map params = null) {
+//    def value = ""
+//    if (params?.awsSecretKey) {
+//        value = params.awsSecretKey
+//    } else {
+//        if (AWS_SECRET_KEY_ID) {
+//            withCredentials([[$class: 'StringBinding', credentialsId: AWS_SECRET_KEY_ID, variable: 'awsSecretKey']]) {
+//                value = "${env.awsSecretKey}"
+//            }
+//        }
+//    }
+//    value
+//}
 
 String getTempDirectory() {
     "/tmp/${id}"
