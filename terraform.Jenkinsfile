@@ -23,27 +23,24 @@ node {
 
     git credentialsId: gitCredsId, url: gitUrl
 
-    withCredentials([[$class: 'StringBinding', credentialsId: getAwsSecretKeyId(), variable: 'awsSecretKey']]) {
+    stage 'Remote Config'
+    tfRemoteConfig
 
-        stage 'Remote Config'
-        tfRemoteConfig awsSecretKey: env.awsSecretKey
-
-        stage 'Get Modules'
-        // Make sure we have the latest version of any modules
-        println "Removing any existing modules"
-        dir(path: "${workingDirectory}/.terraform/modules") {
-            deleteDir()
-        }
-        println "Getting the latest version of any requird modules"
-        terraform "get"
-
-        stage 'Plan Infrastructure'
-        terraform "plan", awsSecretKey: env.awsSecretKey
-        input 'Apply the plan?'
-
-        stage 'Apply Infrastructure'
-        terraform "apply", awsSecretKey: env.awsSecretKey
+    stage 'Get Modules'
+    // Make sure we have the latest version of any modules
+    println "Removing any existing modules"
+    dir(path: "${workingDirectory}/.terraform/modules") {
+        deleteDir()
     }
+    println "Getting the latest version of any required modules"
+    terraform "get"
+
+    stage 'Plan Infrastructure'
+    terraform "plan"
+    input 'Apply the plan?'
+
+    stage 'Apply Infrastructure'
+    terraform "apply"
 }
 
 def getGitUrl() {
@@ -54,13 +51,9 @@ def getGitCredsId() {
     "${GIT_CREDS_ID}"
 }
 
-def tfRemoteConfig(Map params = null) {
-    def run = getTerraformCmd params
-    // Check if we're already working with a remote state. If not, pull the remote state.
-    def remoteArgs = getTfRemoteArgs params
-
-    withEnv(["AWS_ACCESS_KEY_ID=${getAwsSecretKey params}", "AWS_SECRET_ACCESS_KEY=${getAwsSecretKey params}"]) {
-        sh "(head -n20 ${workingDirectory}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${run} remote config ${remoteArgs}"
+def tfRemoteConfig() {
+    withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}", "AWS_SECRET_ACCESS_KEY=${awsSecretKey}"]) {
+        sh "(head -n20 ${workingDirectory}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${terraformCmd} remote config ${remoteArgs}"
     }
 }
 
@@ -82,8 +75,8 @@ String getId() {
     "${env.JOB_NAME}-${env.BUILD_ID}"
 }
 
-String getAwsAccessKey(Map params = null) {
-    params?.awsAccessKey ?: "${AWS_ACCESS_KEY}"
+String getAwsAccessKey() {
+    "${AWS_ACCESS_KEY}"
 }
 
 String getAwsSecretKeyId(Map params = null) {
@@ -95,9 +88,8 @@ String getAwsSecretKey(Map params = null) {
     if (params?.awsSecretKey) {
         value = params.awsSecretKey
     } else {
-        def keyId = getAwsSecretKeyId(params)
-        if (keyId) {
-            withCredentials([[$class: 'StringBinding', credentialsId: keyId, variable: 'awsSecretKey']]) {
+        if (AWS_SECRET_KEY_ID) {
+            withCredentials([[$class: 'StringBinding', credentialsId: AWS_SECRET_KEY_ID, variable: 'awsSecretKey']]) {
                 value = env.awsSecretKey
             }
         }
@@ -117,9 +109,8 @@ String getTfVersion() {
     TF_VERSION ?: "latest"
 }
 
-String getTfRemoteArgs(Map params = null) {
-    def backend = params?.TF_REMOTE_BACKEND ?: TF_REMOTE_BACKEND
-    if (backend == "s3") {
+String getTfRemoteArgs() {
+    if (TF_REMOTE_BACKEND == "s3") {
         "-backend=${TF_REMOTE_BACKEND} -backend-config='bucket=${TF_REMOTE_S3_BUCKET}' -backend-config='key=${TF_REMOTE_S3_KEY}' -backend-config='region=${TF_REMOTE_S3_REGION}'"
     } else {
         "${TF_REMOTE_ARGS ?: ''}"
