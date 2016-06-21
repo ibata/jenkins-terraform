@@ -19,7 +19,9 @@
 import groovy.json.JsonSlurper
 
 node {
-    println "env type: '${env.class.name}'"
+    println "GIT_URL: ${GIT_URL}"
+    println "env.GIT_URL: ${env?.GIT_URL}"
+    println "env type: '${env}'"
     def gitCreds = gitCredsId(GIT_URL: env.GIT_URL)
     git credentialsId: gitCreds, url: gitUrl(env)
 
