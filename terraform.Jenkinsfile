@@ -106,7 +106,7 @@ String getTfVersion(Map params = null) {
 String getTfRemoteArgs(Map params = null) {
     def backend = params?.TF_REMOTE_BACKEND ?: TF_REMOTE_BACKEND
     if (backend == "s3") {
-        "-backend=${TF_REMOTE_BACKEND} -backend-config='bucket=${TF_REMOTE_S3_BUCKET}' -backend-config='key=${TF_REMOTE_S3_KEY}' -backend-config='${TF_REMOTE_S3_REGION}'"
+        "-backend=${TF_REMOTE_BACKEND} -backend-config='bucket=${TF_REMOTE_S3_BUCKET}' -backend-config='key=${TF_REMOTE_S3_KEY}' -backend-config='region=${TF_REMOTE_S3_REGION}'"
     } else {
         "${TF_REMOTE_ARGS ?: ''}"
     }
