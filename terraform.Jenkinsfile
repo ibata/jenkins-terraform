@@ -24,7 +24,7 @@ node {
     git credentialsId: gitCredsId, url: gitUrl
 
     stage 'Remote Config'
-    tfRemoteConfig
+    tfRemoteConfig()
 
     stage 'Get Modules'
     // Make sure we have the latest version of any modules
