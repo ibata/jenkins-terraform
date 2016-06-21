@@ -23,6 +23,13 @@ node {
 
     git credentialsId: gitCredsId, url: gitUrl
 
+    stage 'Clean up .terraform folder'
+    // Temporarly delete all content from .terragorm folder
+    println "Removing any existing modules and state file"
+    dir(path: "${workingDirectory}/.terraform") {
+        deleteDir()
+    }
+
     stage 'Remote Config'
     tfRemoteConfig()
 
