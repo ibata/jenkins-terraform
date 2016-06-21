@@ -75,10 +75,6 @@ String getAwsAccessKey() {
     "${AWS_ACCESS_KEY}"
 }
 
-String getAwsSecretKeyId(Map params = null) {
-    params?.awsSecretKeyId ?: "${AWS_SECRET_KEY_ID}"
-}
-
 String getAwsSecretKey(Map params = null) {
     def value = ""
     if (params?.awsSecretKey) {
