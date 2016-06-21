@@ -82,7 +82,7 @@ String getAwsSecretKey(Map params = null) {
     } else {
         if (AWS_SECRET_KEY_ID) {
             withCredentials([[$class: 'StringBinding', credentialsId: AWS_SECRET_KEY_ID, variable: 'awsSecretKey']]) {
-                value = env.awsSecretKey
+                value = "${env.awsSecretKey}"
             }
         }
     }
