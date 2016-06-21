@@ -148,8 +148,8 @@ String getTfVars(Map params = null) {
 Map<String, Object> getTfVarsMap(Map params = null) {
     // Default to include the AWS Access Key and Secret Key
     def result = [
-            aws_access_key: getAwsAccessKey(params),
-            aws_secret_key: getAwsSecretKey(params)
+            aws_access_key: awsAccessKey,
+            aws_secret_key: awsSecretKey
     ]
     // Slurp the JSON from TF_VARS
     def vars = params?.tfVars ?: TF_VARS
