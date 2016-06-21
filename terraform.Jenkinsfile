@@ -31,7 +31,9 @@ node {
 
         stage 'Get'
         // Make sure we have the latest version of any modules
-        sh "rm -R ${workingDirectory}/.terraform/modules"
+        dir (path: "${workingDirectory}/.terraform/modules") {
+            deleteDir()
+        }
         terraform "get"
 
         stage 'Plan'
