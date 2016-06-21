@@ -19,12 +19,9 @@
 import groovy.json.JsonSlurper
 
 node {
-    println "working directory: ${workingDirectory}"
-    println "temp directory: ${tempDirectory}"
-
     stage "Check Out Project"
 
-    git credentialsId: gitCredsId(), url: gitUrl()
+    git credentialsId: gitCredsId, url: gitUrl
 
     withCredentials([[$class: 'StringBinding', credentialsId: getAwsSecretKeyId(), variable: 'awsSecretKey']]) {
 
@@ -49,20 +46,20 @@ node {
     }
 }
 
-def gitUrl(Map params = null) {
-    params?.GIT_URL ?: "${GIT_URL}"
+def getGitUrl() {
+    "${GIT_URL}"
 }
 
-def gitCredsId(Map params = null) {
-    params?.GIT_CREDS_ID ?: "${GIT_CREDS_ID}"
+def getGitCredsId() {
+    "${GIT_CREDS_ID}"
 }
 
-def tfRemoteConfig(Map params) {
+def tfRemoteConfig(Map params = null) {
     def run = getTerraformCmd params
     // Check if we're already working with a remote state. If not, pull the remote state.
     def remoteArgs = getTfRemoteArgs params
 
-    withEnv(["AWS_ACCESS_KEY_ID=${getAwsSecretKey(params)}", "AWS_SECRET_ACCESS_KEY=${getAwsSecretKey(params)}"]) {
+    withEnv(["AWS_ACCESS_KEY_ID=${getAwsSecretKey params}", "AWS_SECRET_ACCESS_KEY=${getAwsSecretKey params}"]) {
         sh "(head -n20 ${workingDirectory}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${run} remote config ${remoteArgs}"
     }
 }
@@ -72,13 +69,13 @@ def terraform(String tfArgs) {
 }
 
 def terraform(Map params, String tfArgs) {
-    withEnv(["AWS_ACCESS_KEY_ID=${getAwsSecretKey(params)}", "AWS_SECRET_ACCESS_KEY=${getAwsSecretKey(params)}"]) {
-        sh "${getTerraformCmd params} ${tfArgs} ${getTfVars params}"
+    withEnv(["AWS_ACCESS_KEY_ID=${getAwsSecretKey params}", "AWS_SECRET_ACCESS_KEY=${getAwsSecretKey params}"]) {
+        sh "${terraformCmd} ${tfArgs} ${getTfVars params}"
     }
 }
 
-String getTerraformCmd(Map params = null) {
-    "docker run --rm -v ${workingDirectory}:${tempDirectory} -w=${tempDirectory} hashicorp/terraform:${getTfVersion params}"
+String getTerraformCmd() {
+    "docker run --rm -v ${workingDirectory}:${tempDirectory} -w=${tempDirectory} hashicorp/terraform:${tfVersion}"
 }
 
 String getId() {
@@ -94,7 +91,18 @@ String getAwsSecretKeyId(Map params = null) {
 }
 
 String getAwsSecretKey(Map params = null) {
-    params?.awsSecretKey ?: ""
+    def value = ""
+    if (params?.awsSecretKey) {
+        value = params.awsSecretKey
+    } else {
+        def keyId = getAwsSecretKeyId(params)
+        if (keyId) {
+            withCredentials([[$class: 'StringBinding', credentialsId: keyId, variable: 'awsSecretKey']]) {
+                value = env.awsSecretKey
+            }
+        }
+    }
+    value
 }
 
 String getTempDirectory() {
@@ -105,8 +113,8 @@ String getWorkingDirectory() {
     "${pwd()}/${GIT_SUBDIR}"
 }
 
-String getTfVersion(Map params = null) {
-    params.TF_VERSION ?: TF_VERSION ?: "latest"
+String getTfVersion() {
+    TF_VERSION ?: "latest"
 }
 
 String getTfRemoteArgs(Map params = null) {
@@ -134,7 +142,7 @@ String getTfVars(Map params = null) {
     varMap.each { String key, value ->
         if (key.endsWith('*')) {
             withCredentials([[$class: 'StringBinding', credentialsId: value, variable: 'cred']]) {
-                varMap.put key.substring(0, key.length() - 1), params.cred
+                varMap.put key.substring(0, key.length() - 1), env.cred
             }
         }
     }
