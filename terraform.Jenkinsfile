@@ -62,8 +62,8 @@ def terraform(String tfArgs) {
 }
 
 def terraform(Map params, String tfArgs) {
-    withEnv(["AWS_ACCESS_KEY_ID=${getAwsSecretKey params}", "AWS_SECRET_ACCESS_KEY=${getAwsSecretKey params}"]) {
-        sh "${terraformCmd} ${tfArgs} ${getTfVars params}"
+    withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}", "AWS_SECRET_ACCESS_KEY=${awsSecretKey}"]) {
+        sh "${terraformCmd} ${tfArgs} ${tfVars}"
     }
 }
 
@@ -117,17 +117,9 @@ String getTfRemoteArgs() {
     }
 }
 
-String getTfVars(Map params = null) {
+String getTfVars() {
     // Add values from JSON in 'TF_VARS'
-    Map<String, Object> varMap = getTfVarsMap(params)
-
-    // Pull in all environment variables prefixed with 'TF_VAR_'
-    params?.each { String key, String value ->
-        if (key.startsWith("TF_VAR_")) {
-            varMap.put key.substring("TF_VAR_".length()), value
-            vars += " -var ${key.substring("TF_VAR_".length())}=${value}"
-        }
-    }
+    Map<String, Object> varMap = getTfVarsMap()
 
     // Look up any credentials where the variable name ends with '*'
     varMap.each { String key, value ->
@@ -145,23 +137,12 @@ String getTfVars(Map params = null) {
     return vars.toString()
 }
 
-Map<String, Object> getTfVarsMap(Map params = null) {
-    // Default to include the AWS Access Key and Secret Key
-    def result = [
-            aws_access_key: awsAccessKey,
-            aws_secret_key: awsSecretKey
-    ]
+Map<String, Object> getTfVarsMap() {
     // Slurp the JSON from TF_VARS
-    def vars = params?.tfVars ?: TF_VARS
-    if (vars instanceof String) {
+    def vars = TF_VARS as String
+    if (vars && vars.trim().length() > 0) {
         vars = new JsonSlurper().parseText(vars as String)
     }
-
-    if (vars instanceof Map<String, Object>) {
-        result.putAll(vars)
-    } else if (vars != null) {
-        throw new IllegalArgumentException("The TF_VARS environment variable or 'tfVars' parameter must be a String or a Map")
-    }
-    return result
+    vars
 }
 
