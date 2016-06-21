@@ -19,7 +19,8 @@
 import groovy.json.JsonSlurper
 
 node {
-    git credentialsId: getGitCredsId(env), url: getGitUrl(env)
+    def gitCreds = gitCredsId(env)
+    git credentialsId: gitCreds, url: gitUrl(env)
 
     withCredentials([[$class: 'StringBinding', credentialsId: getAwsSecretKeyId(env), variable: 'awsSecretKey']]) {
 
@@ -144,11 +145,11 @@ Map<String, Object> getTfVarsMap(Map env = null) {
     return result
 }
 
-def getGitUrl(Map env = null) {
-    "${env.GIT_URL}" as String
+def gitUrl(Map env = null) {
+    "${env.GIT_URL}"
 }
 
-def getGitCredsId(Map env = null) {
-    "${env.GIT_CREDS_ID}" as String
+def gitCredsId(Map env = null) {
+    "${env.GIT_CREDS_ID}"
 }
 
