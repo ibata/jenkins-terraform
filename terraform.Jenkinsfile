@@ -40,18 +40,18 @@ node {
     }
 }
 
-def gitUrl(Map env = null) {
-    env?.GIT_URL ?: "${GIT_URL}"
+def gitUrl(Map params = null) {
+    params?.GIT_URL ?: "${GIT_URL}"
 }
 
-def gitCredsId(Map env = null) {
-    env?.GIT_CREDS_ID ?: "${GIT_CREDS_ID}"
+def gitCredsId(Map params = null) {
+    params?.GIT_CREDS_ID ?: "${GIT_CREDS_ID}"
 }
 
-def tfRemoteConfig(Map env) {
-    def run = getTerraformCmd env
+def tfRemoteConfig(Map params) {
+    def run = getTerraformCmd params
     // Check if we're already working with a remote state. If not, pull the remote state.
-    def remoteArgs = getTfRemoteArgs env
+    def remoteArgs = getTfRemoteArgs params
 
     sh "(head -n20 ${workingDirectory}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${run} remote config ${remoteArgs}"
 }
@@ -65,23 +65,23 @@ def terraform(Map params, String tfArgs) {
 }
 
 String getTerraformCmd(Map params = null) {
-    "docker run --rm -v ${getWorkingDirectory}:${getTempDirectory params} -w=${getTempDirectory} -e AWS_ACCESS_KEY_ID=${getAwsAccessKey params} -e AWS_SECRET_ACCESS_KEY=${getAwsSecretKey(params)} hashicorp/terraform:${getTfVersion params}"
+    "docker run --rm -v ${workingDirectory}:${tempDirectory} -w=${tempDirectory} -e AWS_ACCESS_KEY_ID=${getAwsAccessKey params} -e AWS_SECRET_ACCESS_KEY=${getAwsSecretKey params} hashicorp/terraform:${getTfVersion params}"
 }
 
 String getId() {
     "${JOB_NAME}-${BUILD_ID}"
 }
 
-String getAwsAccessKey(Map env = null) {
-    env?.awsAccessKey ?: "${AWS_ACCESS_KEY}"
+String getAwsAccessKey(Map params = null) {
+    params?.awsAccessKey ?: "${AWS_ACCESS_KEY}"
 }
 
-String getAwsSecretKeyId(Map env = null) {
-    env?.awsSecretKeyId ?: "${AWS_SECRET_KEY_ID}"
+String getAwsSecretKeyId(Map params = null) {
+    params?.awsSecretKeyId ?: "${AWS_SECRET_KEY_ID}"
 }
 
-String getAwsSecretKey(Map env = null) {
-    env?.awsSecretKey ?: "${AWS_SECRET_KEY}"
+String getAwsSecretKey(Map params = null) {
+    params?.awsSecretKey ?: "${AWS_SECRET_KEY}"
 }
 
 String getTempDirectory() {
