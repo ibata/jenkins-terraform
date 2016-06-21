@@ -29,25 +29,18 @@ node {
     stage 'Get Modules'
     // Make sure we have the latest version of any modules
     println "Removing any existing modules"
-    dir(path: "${workingDirectory}/.terraform/modules") {
+    dir(path: "${workingDirectory}/${instanceSubDir}/.terraform/modules") {
         deleteDir()
     }
     println "Getting the latest version of any required modules"
-    dir(path: "${workingDirectory}"){
-        terraform "get"
-    }
-    
-    stage 'Plan Infrastructure'
+    terraform "get"
 
-    dir(path: "${workingDirectory}"){
-        terraform "plan"
-    }
+    stage 'Plan Infrastructure'
+    terraform "plan"
     input 'Apply the plan?'
 
     stage 'Apply Infrastructure'
-    dir(path: "${workingDirectory}"){
-        terraform "apply"
-    }
+    terraform "apply"
 }
 
 def getGitUrl() {
@@ -60,7 +53,7 @@ def getGitCredsId() {
 
 def tfRemoteConfig() {
     withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}", "AWS_SECRET_ACCESS_KEY=${awsSecretKey}"]) {
-        sh "(head -n20 ${workingDirectory}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${terraformCmd} remote config ${tfRemoteArgs}"
+        sh "(head -n20 ${workingDirectory}/${instanceSubDir}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${terraformCmd} remote config ${tfRemoteArgs}"
     }
 }
 
@@ -71,7 +64,7 @@ def terraform(String tfArgs) {
 }
 
 String getTerraformCmd() {
-    "docker run --rm -v ${workingDirectory}:${tempDirectory} -w=${tempDirectory} -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY hashicorp/terraform:${tfVersion}"
+    "docker run --rm -v ${workingDirectory}:${tempDirectory} -w=${tempDirectory}/${instanceSubDir} -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY hashicorp/terraform:${tfVersion}"
 }
 
 String getId() {
@@ -101,7 +94,11 @@ String getTempDirectory() {
 }
 
 String getWorkingDirectory() {
-    "${pwd()}/${GIT_SUBDIR}"
+    "${pwd()}"
+}
+
+String getInstanceSubDir(){
+    "${GIT_SUBDIR}"
 }
 
 String getTfVersion() {
