@@ -22,6 +22,8 @@ node {
     println "working directory: ${workingDirectory}"
     println "temp directory: ${tempDirectory}"
 
+    stage "Check Out Project"
+
     git credentialsId: gitCredsId(), url: gitUrl()
 
     withCredentials([[$class: 'StringBinding', credentialsId: getAwsSecretKeyId(), variable: 'awsSecretKey']]) {
@@ -29,7 +31,7 @@ node {
         stage 'Remote Config'
         tfRemoteConfig awsSecretKey: env.awsSecretKey
 
-        stage 'Get'
+        stage 'Get Modules'
         // Make sure we have the latest version of any modules
         println "Removing any existing modules"
         dir(path: "${workingDirectory}/.terraform/modules") {
@@ -38,11 +40,11 @@ node {
         println "Getting the latest version of any requird modules"
         terraform "get"
 
-        stage 'Plan'
+        stage 'Plan Infrastructure'
         terraform "plan", awsSecretKey: env.awsSecretKey
         input 'Apply the plan?'
 
-        stage 'Apply'
+        stage 'Apply Infrastructure'
         terraform "apply", awsSecretKey: env.awsSecretKey
     }
 }
@@ -92,7 +94,7 @@ String getAwsSecretKeyId(Map params = null) {
 }
 
 String getAwsSecretKey(Map params = null) {
-    params?.awsSecretKey ?: "${AWS_SECRET_KEY}"
+    params?.awsSecretKey ?: ""
 }
 
 String getTempDirectory() {
