@@ -19,8 +19,7 @@
 import groovy.json.JsonSlurper
 
 node {
-
-    git credentialsId: env.GIT_CREDS_ID, url: env.GIT_URL
+    git credentialsId: getGitCredsId(env), url: getGitUrl(env)
 
     withCredentials([[$class: 'StringBinding', credentialsId: getAwsSecretKeyId(env), variable: 'awsSecretKey']]) {
 
@@ -78,7 +77,7 @@ String getAwsSecretKey(Map env = null) {
 }
 
 String getTempDirectory(Map env = null) {
-    "/tmp/${id env}"
+    "/tmp/${getId env}"
 }
 
 String getWorkingDirectory(Map env = null) {
@@ -125,14 +124,14 @@ String getTfVars(Map env = null) {
     return vars.toString()
 }
 
-Map<String, Object> getTfVarsMap(Map params = null) {
+Map<String, Object> getTfVarsMap(Map env = null) {
     // Default to include the AWS Access Key and Secret Key
     def result = [
-            aws_access_key: getAwsAccessKey(params),
-            aws_secret_key: getAwsSecretKey(params)
+            aws_access_key: getAwsAccessKey(env),
+            aws_secret_key: getAwsSecretKey(env)
     ]
     // Slurp the JSON from TF_VARS
-    def vars = params?.tfVars ?: env.TF_VARS
+    def vars = env?.tfVars ?: env?.TF_VARS
     if (vars instanceof String) {
         vars = new JsonSlurper().parseText(vars as String)
     }
@@ -145,11 +144,11 @@ Map<String, Object> getTfVarsMap(Map params = null) {
     return result
 }
 
-static String getGitUrl(Map env = null) {
+def getGitUrl(Map env = null) {
     "${env.GIT_URL}" as String
 }
 
-static String getGitCredsId(Map env = null) {
+def getGitCredsId(Map env = null) {
     "${env.GIT_CREDS_ID}" as String
 }
 
