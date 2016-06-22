@@ -36,11 +36,11 @@ node {
     terraform "get"
 
     stage 'Plan Infrastructure'
-    terraform "plan"
+    terraform "plan -input=false"
     input 'Apply the plan?'
 
     stage 'Apply Infrastructure'
-    terraform "apply"
+    terraform "apply -input=false"
 }
 
 def getGitUrl() {
