@@ -17,6 +17,7 @@
 // * TF_VAR_xxx: Defines an individual variable named 'xxx' (substitute with the desired variable name, case-sensitive).
 //               May be more than one with different names. E.g. "TF_VAR_foo = 'bar'" will be passed in as '-var foo=bar'
 import groovy.json.JsonSlurper
+import java.util.regex.Pattern
 
 node {
     stage "Check Out Project"
