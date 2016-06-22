@@ -117,7 +117,7 @@ String getTfRemoteArgs() {
 
 
 String getTfVars() {
-    def TF_VARS_LOOKUP = new Pattern(/^\$(.+)$/)
+    def TF_VARS_LOOKUP = Pattern.compile(/^\$(.+)$/)
 
     // Add values from JSON in 'TF_VARS'
     Map<String, Object> varsMap = getTfVarsMap()
