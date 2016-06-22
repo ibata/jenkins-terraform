@@ -114,8 +114,6 @@ String getTfRemoteArgs() {
     }
 }
 
-
-
 String getTfVars() {
     def TF_VARS_LOOKUP = Pattern.compile(/^\$(.+)$/)
 
@@ -125,20 +123,24 @@ String getTfVars() {
 
     // Look up any credentials where the variable name ends with '*'
     varsMap.each { String key, value ->
-        def matcher = TF_VARS_LOOKUP.matcher(value)
-        if (matcher.matches()) {
-            // Look up the named property
-            def propertyName = matcher.group(1)
+        if (value.startsWith('$')) {
+            // variable values matching '$...' are property lookups
+            def propertyName = value.substring(1)
             if (propertyName.startsWith('*')) {
+                // property lookups starting with '*' are credential lookups
                 propertyName = propertyName.substring(1)
                 println "Looking up '${propertyName}' credential for -var '${key}'"
-                // It's a credential ID
                 withCredentials([[$class: 'StringBinding', credentialsId: propertyName, variable: 'cred']]) {
-                    value = env.cred
+                    // Only update it if the credential can be found.
+                    if (env.cred != null)
+                        value = env.cred
                 }
             } else {
                 println "Looking up '${propertyName}' property for -var '${key}'"
-                value = getProperty(propertyName)
+                def property = getProperty(propertyName)
+                // Only update it if the property exists.
+                if (property != null)
+                    value = property
             }
         }
         resolved.put key, value
