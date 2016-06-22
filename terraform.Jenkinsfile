@@ -59,7 +59,7 @@ def tfRemoteConfig() {
 
 def terraform(String tfArgs) {
     withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}", "AWS_SECRET_ACCESS_KEY=${awsSecretKey}"]) {
-        sh "${terraformCmd} ${tfArgs}" // ${tfVars}"
+        sh "${terraformCmd} ${tfArgs} ${tfVars}"
     }
 }
 
@@ -113,24 +113,39 @@ String getTfRemoteArgs() {
     }
 }
 
+const Pattern TF_VARS_LOOKUP = ~/^\$(.+)$/
+
 String getTfVars() {
     // Add values from JSON in 'TF_VARS'
-    Map<String, Object> varMap = getTfVarsMap()
+    Map<String, Object> varsMap = getTfVarsMap()
+    Map<String, Object> resolved = [:]
 
     // Look up any credentials where the variable name ends with '*'
-    varMap.each { String key, value ->
-        if (key.endsWith('*')) {
-            withCredentials([[$class: 'StringBinding', credentialsId: value, variable: 'cred']]) {
-                varMap.put key.substring(0, key.length() - 1), env.cred
+    varsMap.each { String key, value ->
+        def matcher = TF_VARS_LOOKUP.matcher(value)
+        if (matcher.matches()) {
+            // Look up the named property
+            def propertyName = matcher.group(1)
+            if (propertyName.startsWith('*')) {
+                propertyName = propertyName.substring(1)
+                println "Looking up '${propertyName}' credential for -var '${key}'"
+                // It's a credential ID
+                withCredentials([[$class: 'StringBinding', credentialsId: propertyName, variable: 'cred']]) {
+                    value = env.cred
+                }
+            } else {
+                println "Looking up '${propertyName}' property for -var '${key}'"
+                value = getProperty(propertyName)
             }
         }
+        resolved.put key, value
     }
 
-    StringBuilder vars = new StringBuilder()
-    varMap.each { key, value ->
-        vars.append " -var ${key}=${value}"
+    StringBuilder varString = new StringBuilder()
+    resolved.each { key, value ->
+        varString.append " -var '${key}=${value}'"
     }
-    return vars.toString()
+    return varString.toString()
 }
 
 Map<String, Object> getTfVarsMap() {
