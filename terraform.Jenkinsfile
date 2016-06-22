@@ -113,7 +113,7 @@ String getTfRemoteArgs() {
     }
 }
 
-const Pattern TF_VARS_LOOKUP = ~/^\$(.+)$/
+constant Pattern TF_VARS_LOOKUP = ~/^\$(.+)$/
 
 String getTfVars() {
     // Add values from JSON in 'TF_VARS'
