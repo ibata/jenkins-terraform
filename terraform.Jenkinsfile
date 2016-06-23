@@ -33,13 +33,16 @@ node {
         deleteDir()
     }
     println "Getting the latest version of any required modules"
+    println "PWD: ${pwd()}"
     terraform "get -update=true"
 
     stage 'Plan Infrastructure'
+    println "PWD: ${pwd()}"
     terraform "plan -input=false ${tfVarsDirect}"
     input 'Apply the plan?'
 
     stage 'Apply Infrastructure'
+    println "PWD: ${pwd()}"
     terraform "apply -input=false ${tfVarsDirect}"
 }
 
