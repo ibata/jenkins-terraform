@@ -33,14 +33,14 @@ node {
         deleteDir()
     }
     println "Getting the latest version of any required modules"
-    terraform "get"
+    terraform "get -update=true"
 
     stage 'Plan Infrastructure'
-    terraform "plan -input=false"
+    terraform "plan -input=false ${tfVarsDirect}"
     input 'Apply the plan?'
 
     stage 'Apply Infrastructure'
-    terraform "apply -input=false"
+    terraform "apply -input=false ${tfVarsDirect}"
 }
 
 def getGitUrl() {
@@ -59,7 +59,7 @@ def tfRemoteConfig() {
 
 def terraform(String tfArgs) {
     withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}", "AWS_SECRET_ACCESS_KEY=${awsSecretKey}"]) {
-        sh "${terraformCmd} ${tfArgs} ${tfVarsDirect}"
+        sh "${terraformCmd} ${tfArgs}"
     }
 }
 
