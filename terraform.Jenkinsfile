@@ -36,6 +36,8 @@ node {
 
     tfRemoteConfig()
 
+    terraform "refresh -input=false ${tfVarsDirect}"
+
     stage 'Plan Infrastructure'
     terraform "plan -input=false ${tfVarsDirect}"
     input 'Apply the plan?'
