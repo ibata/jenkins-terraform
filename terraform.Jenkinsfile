@@ -123,7 +123,7 @@ String getTfVars() {
     Map<String, Object> resolved = [:]
 
     // Look up any credentials where the variable name ends with '*'
-    for (entry in varsMap.entrySet()) {
+    for (entry in varsMap) {
         String key = entry.key
         Object value = entry.value
         if (value.startsWith('$')) {
