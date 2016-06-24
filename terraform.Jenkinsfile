@@ -23,11 +23,6 @@ node {
 
     git credentialsId: gitCredsId, url: gitUrl
 
-    stage 'Reset'
-    dir(path: "${workingDirectory}/${instanceSubDir}/.terraform") {
-        deleteDir()
-    }
-
     stage 'Remote Config'
     terraform "version"
 
