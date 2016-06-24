@@ -23,19 +23,13 @@ node {
 
     git credentialsId: gitCredsId, url: gitUrl
 
+    stage 'Get Modules'
+    terraform "get -update=true"
+
     stage 'Remote Config'
     terraform "version"
 
     tfRemoteConfig()
-
-    stage 'Get Modules'
-    // Make sure we have the latest version of any modules
-    println "Removing any existing modules"
-    dir(path: "${workingDirectory}/${instanceSubDir}.terraform/modules") {
-        deleteDir()
-    }
-    println "Getting the latest version of any required modules"
-    terraform "get -update=true"
 
     stage 'Plan Infrastructure'
     terraform "plan -input=false ${tfVarsDirect}"
