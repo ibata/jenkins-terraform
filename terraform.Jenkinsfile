@@ -125,7 +125,9 @@ String getTfVars() {
     Map<String, Object> resolved = [:]
 
     // Look up any credentials where the variable name ends with '*'
-    varsMap.each { String key, value ->
+    for ( def entry in varsMap.entrySet() ) {
+        String key = entry.key
+        Object value = entry.value
         if (value.startsWith('$')) {
             // variable values matching '$...' are property lookups
             def propertyName = value.substring(1)
