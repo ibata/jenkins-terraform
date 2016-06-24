@@ -32,14 +32,14 @@ node {
     terraform "get -update=true"
 
     stage 'Update state'
-    terraform "refresh -input=false ${tfVarsDirect}"
+    terraform "refresh -input=false ${tfVars}"
 
     stage 'Plan Infrastructure'
-    terraform "plan -input=false ${tfVarsDirect}"
+    terraform "plan -input=false ${tfVars}"
     input 'Apply the plan?'
 
     stage 'Apply Infrastructure'
-    terraform "apply -input=false ${tfVarsDirect}"
+    terraform "apply -input=false ${tfVars}"
 }
 
 def getGitUrl() {
@@ -123,7 +123,7 @@ String getTfVars() {
     Map<String, Object> resolved = [:]
 
     // Look up any credentials where the variable name ends with '*'
-    for ( def entry in varsMap.entrySet() ) {
+    for (entry in varsMap.entrySet()) {
         String key = entry.key
         Object value = entry.value
         if (value.startsWith('$')) {
