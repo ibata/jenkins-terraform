@@ -25,7 +25,7 @@ node {
 
     stage 'Reset'
     dir(path: "${workingDirectory}/${instanceSubDir}/.terraform") {
-        dirDelete()
+        deleteDir()
     }
 
     stage 'Get Modules'
