@@ -28,14 +28,15 @@ node {
         deleteDir()
     }
 
-    stage 'Get Modules'
-    tfGet()
-
     stage 'Remote Config'
     terraform "version"
 
     tfRemoteConfig()
 
+    stage 'Get Modules'
+    terraform "get -update=true"
+
+    stage 'Update state'
     terraform "refresh -input=false ${tfVarsDirect}"
 
     stage 'Plan Infrastructure'
@@ -54,14 +55,10 @@ def getGitCredsId() {
     "${GIT_CREDS_ID}"
 }
 
-def tfGet() {
-    sh "${terraformCmd} get -update=true"
-}
-
 def tfRemoteConfig() {
     withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}", "AWS_SECRET_ACCESS_KEY=${awsSecretKey}"]) {
-        //sh "(head -n20 ${workingDirectory}/${instanceSubDir}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${terraformCmd} remote config ${tfRemoteArgs}"
-        terraform "remote config ${tfRemoteArgs}"
+        sh "(head -n20 ${workingDirectory}/${instanceSubDir}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${terraformCmd} remote config ${tfRemoteArgs}"
+        terraform "remote pull"
     }
 }
 
