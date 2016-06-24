@@ -23,29 +23,29 @@ node {
 
     git credentialsId: gitCredsId, url: gitUrl
 
-    dir(path: "${workingDirectory}/${instanceSubDir}") {
-        stage 'Remote Config'
-        tfRemoteConfig()
+    stage 'Remote Config'
+    terraform "version"
 
-        stage 'Get Modules'
-        // Make sure we have the latest version of any modules
-        println "Removing any existing modules"
-        dir(path: ".terraform/modules") {
-            deleteDir()
-        }
-        println "Getting the latest version of any required modules"
-        println "PWD: ${pwd()}"
-        terraform "get -update=true"
+    tfRemoteConfig()
 
-        stage 'Plan Infrastructure'
-        println "PWD: ${pwd()}"
-        terraform "plan -input=false ${tfVarsDirect}"
-        input 'Apply the plan?'
-
-        stage 'Apply Infrastructure'
-        println "PWD: ${pwd()}"
-        terraform "apply -input=false ${tfVarsDirect}"
+    stage 'Get Modules'
+    // Make sure we have the latest version of any modules
+    println "Removing any existing modules"
+    dir(path: "${workingDirectory}/${instanceSubDir}.terraform/modules") {
+        deleteDir()
     }
+    println "Getting the latest version of any required modules"
+    println "PWD: ${pwd()}"
+    terraform "get -update=true"
+
+    stage 'Plan Infrastructure'
+    println "PWD: ${pwd()}"
+    terraform "plan -input=false ${tfVarsDirect}"
+    input 'Apply the plan?'
+
+    stage 'Apply Infrastructure'
+    println "PWD: ${pwd()}"
+    terraform "apply -input=false ${tfVarsDirect}"
 }
 
 def getGitUrl() {
