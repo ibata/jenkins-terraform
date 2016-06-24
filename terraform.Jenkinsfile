@@ -32,14 +32,14 @@ node {
     terraform "get -update=true"
 
     stage 'Update state'
-    terraform "refresh -input=false ${tfVars}"
+    terraform "refresh -input=false ${tfVarsDirect}"
 
     stage 'Plan Infrastructure'
-    terraform "plan -input=false ${tfVars}"
+    terraform "plan -input=false ${tfVarsDirect}"
     input 'Apply the plan?'
 
     stage 'Apply Infrastructure'
-    terraform "apply -input=false ${tfVars}"
+    terraform "apply -input=false ${tfVarsDirect}"
 }
 
 def getGitUrl() {
