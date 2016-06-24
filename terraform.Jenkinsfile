@@ -24,7 +24,7 @@ node {
     git credentialsId: gitCredsId, url: gitUrl
 
     stage 'Get Modules'
-    terraform "get -update=true"
+    tfGet()
 
     stage 'Remote Config'
     terraform "version"
@@ -45,6 +45,10 @@ def getGitUrl() {
 
 def getGitCredsId() {
     "${GIT_CREDS_ID}"
+}
+
+def tfGet() {
+    sh "${terraformCmd} get -update=true"
 }
 
 def tfRemoteConfig() {
