@@ -32,23 +32,20 @@ node {
     git credentialsId: GIT_CREDS_ID, url: GIT_URL
     // Pull the remote config
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: TF_REMOTE_AWS_CREDS, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-        withEnv(["AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}"]) {
-            sh 'echo DEBUG: AWS_ACCESS_KEY_ID is $AWS_ACCESS_KEY_ID'
-            tfRemoteConfig()
-        }
+        sh 'echo DEBUG: AWS_ACCESS_KEY_ID is $AWS_ACCESS_KEY_ID'
+        tfRemoteConfig()
     }
-    // Update any modules
-    terraform "get -update=true"
 
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: TF_APPLY_AWS_CREDS, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-        withEnv(["AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}"]) {
-            stage 'Plan'
-            terraform "plan -input=false ${TF_APPLY_ARGS}"
-            input 'Apply the plan?'
+        // Update any modules
+        terraform "get -update=true"
 
-            stage 'Apply'
-            terraform "apply -input=false ${TF_APPLY_ARGS}"
-        }
+        stage 'Plan'
+        terraform "plan -input=false ${TF_APPLY_ARGS}"
+        input 'Apply the plan?'
+
+        stage 'Apply'
+        terraform "apply -input=false ${TF_APPLY_ARGS}"
     }
 }
 
