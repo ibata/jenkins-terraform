@@ -1,8 +1,8 @@
 // Reusable Jenkinsfile for Terraform projects. An Atlas replacement.
 // 
 // Git:
-// * GIT_CREDS_ID:        A User/Password Credential for accessing the Git repository.
 // * GIT_URL:             The URL for the Git repository.
+// * GIT_CREDS_ID:        A User/Password Credential for accessing the Git repository.
 // * GIT_SUBDIR:          The subdirectory within the Git repository containing the Terraform config to execute.
 
 // Terraform:
@@ -23,6 +23,8 @@
 // * TF_APPLY_AWS_CREDS: A User/Password Credential for planning/applying, where the username is the AWS Access Key
 //                       and the password is the Secret Key.
 // * TF_APPLY_ARGS:      The full set of arguments to use when planning or applying Terraform.
+
+import groovy.json.JsonSlurper
 
 node {
     stage "Setup"
