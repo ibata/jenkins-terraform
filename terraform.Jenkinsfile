@@ -54,8 +54,16 @@ boolean hasRemoteConfig() {
     if (fileExists(terraformState)) {
         println "Found the terraform.state"
         def config = new JsonSlurper().parseText(readFile(terraformState))
-        println "config.remote: ${config?.remote}"
-        return config && config.remote
+        def remote = config?.remote
+        println "remote: ${config?.remote}"
+        if (remote && TF_REMOTE_BACKEND == "s3") {
+            if (remote.type == "s3" && remote.config.bucket == TF_REMOTE_S3_BUCKET && remote.config.key == TF_REMOTE_S3_KEY && remote.config.region == TF_REMOTE_S3_REGION) {
+                return true
+            } else {
+                // The state is invalid. Delete it and reconfigure.
+                deleteFile(terraformState)
+            }
+        }
     }
     return false
 }
