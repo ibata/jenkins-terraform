@@ -32,18 +32,22 @@ node {
     git credentialsId: GIT_CREDS_ID, url: GIT_URL
     // Pull the remote config
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: TF_REMOTE_AWS_CREDS, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-        tfRemoteConfig()
+        withEnv(["AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}"]) {
+            tfRemoteConfig()
+        }
     }
     // Update any modules
     terraform "get -update=true"
 
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: TF_APPLY_AWS_CREDS, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-        stage 'Plan'
-        terraform "plan -input=false ${TF_APPLY_ARGS}"
-        input 'Apply the plan?'
+        withEnv(["AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}"]) {
+            stage 'Plan'
+            terraform "plan -input=false ${TF_APPLY_ARGS}"
+            input 'Apply the plan?'
 
-        stage 'Apply'
-        terraform "apply -input=false ${TF_APPLY_ARGS}"
+            stage 'Apply'
+            terraform "apply -input=false ${TF_APPLY_ARGS}"
+        }
     }
 }
 
