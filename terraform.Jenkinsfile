@@ -7,10 +7,10 @@
 
 // Terraform:
 // * TF_VERSION:          The version number using tags in dockerhub for hashicorp/terraform. Uses 'latest' by default.
+// * TF_AWS_CREDS:        A User/Password Credential for managing AWS via Terraform, where the username is the
+//                        AWS Access Key and the password is the Secret Key.
 
 // Remote Config:
-// * TF_REMOTE_AWS_CREDS: A User/Password Credential for accessing remote config, where the username is the AWS Access Key
-//                        and the password is the Secret Key.
 // * TF_REMOTE_ARGS:      The full set of arguments to use when configuring remote state for Terraform.
 // Alternately...
 // * TF_REMOTE_BACKEND:   The backend to use. (e.g. 's3')
@@ -20,8 +20,6 @@
 // * TF_REMOTE_S3_REGION: The AWS Region where is is stored. (e.g. 'us-east-1')
 
 // Plan/Apply:
-// * TF_APPLY_AWS_CREDS: A User/Password Credential for planning/applying, where the username is the AWS Access Key
-//                       and the password is the Secret Key.
 // * TF_APPLY_ARGS:      The full set of arguments to use when planning or applying Terraform.
 
 import groovy.json.JsonSlurper
@@ -38,7 +36,7 @@ node {
 
     // Pull the remote config
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: TF_AWS_CREDS, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-        tfRemoteConfig()
+        terraform "remote config ${tfRemoteArgs}"
 
         // Update any modules
         terraform "get -update=true"
@@ -49,33 +47,6 @@ node {
 
         stage 'Apply'
         terraform "apply -input=false ${TF_APPLY_ARGS}"
-    }
-}
-
-boolean hasRemoteConfig() {
-    def terraformState = "${workingDirectory}/${instanceSubDir}/.terraform/terraform.tfstate"
-    if (fileExists(terraformState)) {
-        println "Found the terraform.state"
-        def config = new JsonSlurper().parseText(readFile(terraformState))
-        def remote = config?.remote
-        println "remote: ${config?.remote}"
-        if (remote && TF_REMOTE_BACKEND == "s3") {
-            if (remote.type == "s3" && remote.config.bucket == TF_REMOTE_S3_BUCKET && remote.config.key == TF_REMOTE_S3_KEY && remote.config.region == TF_REMOTE_S3_REGION) {
-                return true
-            } else {
-                // The state is invalid. Delete it and reconfigure.
-                new File(terraformState).delete()
-            }
-        }
-    }
-    return false
-}
-
-def tfRemoteConfig() {
-    if (!hasRemoteConfig()) {
-        terraform "remote config ${tfRemoteArgs}"
-    } else {
-        terraform "remote pull"
     }
 }
 
