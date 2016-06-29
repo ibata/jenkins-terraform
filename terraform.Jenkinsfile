@@ -37,12 +37,9 @@ node {
     }
 
     // Pull the remote config
-    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: TF_REMOTE_AWS_CREDS, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-        sh 'echo DEBUG: AWS_ACCESS_KEY_ID is $AWS_ACCESS_KEY_ID'
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: TF_AWS_CREDS, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY']]) {
         tfRemoteConfig()
-    }
 
-    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: TF_APPLY_AWS_CREDS, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY']]) {
         // Update any modules
         terraform "get -update=true"
 
