@@ -30,6 +30,12 @@ node {
     stage "Setup"
     // Check out the project
     git credentialsId: GIT_CREDS_ID, url: GIT_URL
+
+    // Reset the .terraform directory
+    dir(path: "${workingDirectory}/${instanceSubDir}/.terraform") {
+        deleteDir()
+    }
+
     // Pull the remote config
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: TF_REMOTE_AWS_CREDS, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY']]) {
         sh 'echo DEBUG: AWS_ACCESS_KEY_ID is $AWS_ACCESS_KEY_ID'
@@ -61,7 +67,7 @@ boolean hasRemoteConfig() {
                 return true
             } else {
                 // The state is invalid. Delete it and reconfigure.
-                deleteFile(terraformState)
+                new File(terraformState).delete()
             }
         }
     }
