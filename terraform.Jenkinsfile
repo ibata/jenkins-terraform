@@ -73,7 +73,7 @@ def terraform(String tfArgs) {
 }
 
 def getTerraformCmd() {
-    "set +x; docker run --rm -v ${workingDirectory}:${tempDirectory} -w=${tempDirectory}/${instanceSubDir} -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY hashicorp/terraform:${tfVersion}"
+    "docker run --rm -v ${workingDirectory}:${tempDirectory} -w=${tempDirectory}/${instanceSubDir} -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY hashicorp/terraform:${tfVersion}"
 }
 
 def getId() {
