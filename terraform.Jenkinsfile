@@ -33,7 +33,7 @@ node {
     // Pull the remote config
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: TF_REMOTE_AWS_CREDS, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY']]) {
         withEnv(["AWS_ACCESS_KEY_ID=${env.AWS_ACCESS_KEY_ID}", "AWS_SECRET_ACCESS_KEY=${env.AWS_SECRET_ACCESS_KEY}"]) {
-            sh "echo DEBUG: AWS_ACCESS_KEY_ID is $AWS_ACCESS_KEY_ID"
+            sh 'echo DEBUG: AWS_ACCESS_KEY_ID is $AWS_ACCESS_KEY_ID'
             tfRemoteConfig()
         }
     }
