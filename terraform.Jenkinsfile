@@ -34,8 +34,8 @@ node {
         deleteDir()
     }
 
-    // Pull the remote config
     withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: TF_AWS_CREDS, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+        // Pull the remote config
         terraform "remote config ${tfRemoteArgs}"
 
         // Update any modules
