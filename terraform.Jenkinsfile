@@ -1,92 +1,77 @@
 // Reusable Jenkinsfile for Terraform projects. An Atlas replacement.
 // 
-// Vars:
-// AWS: AWS_ACCESS_KEY, AWS_SECRET_KEY_ID,
-// Git: GIT_CREDS_ID, GIT_URL, GIT_SUBDIR,
+// Git:
+// * GIT_CREDS_ID:        A User/Password Credential for accessing the Git repository.
+// * GIT_URL:             The URL for the Git repository.
+// * GIT_SUBDIR:          The subdirectory within the Git repository containing the Terraform config to execute.
 
 // Terraform:
-// * TF_VERSION: The version number using tags in dockerhub for hashicorp/terraform. Uses 'latest' by default
-// * TF_REMOTE_ARGS: The full set of arguments to use when configuring remote state for Terraform. Alternately...
-// * TF_REMOTE_BACKEND: The backend to use, eg 's3'
+// * TF_VERSION:          The version number using tags in dockerhub for hashicorp/terraform. Uses 'latest' by default.
+
+// Remote Config:
+// * TF_REMOTE_AWS_CREDS: A User/Password Credential for accessing remote config, where the username is the AWS Access Key
+//                        and the password is the Secret Key.
+// * TF_REMOTE_ARGS:      The full set of arguments to use when configuring remote state for Terraform.
+// Alternately...
+// * TF_REMOTE_BACKEND:   The backend to use. (e.g. 's3')
 // Terraform S3 Remote Config:
-// * TF_REMOTE_S3_BUCKET: The S3 bucket name
-// * TF_REMOTE_S3_KEY: The path in the bucket where the state is stored. (e.g. 'instance/cdn-rocket/terraform.tfstate')
-// * TF_REMOTE_S3_REGION: The AWS Region where is is stored (e.g. 'us-east-1')
-// Variables:
-// * TF_VARS: JSON String with variables named with their value and key. E.g. "{ 'foo': 'bar' }"
-// * TF_VAR_xxx: Defines an individual variable named 'xxx' (substitute with the desired variable name, case-sensitive).
-//               May be more than one with different names. E.g. "TF_VAR_foo = 'bar'" will be passed in as '-var foo=bar'
-import groovy.json.JsonSlurper
+// * TF_REMOTE_S3_BUCKET: The S3 bucket name.
+// * TF_REMOTE_S3_KEY:    The path in the bucket where the state is stored. (e.g. 'instance/foo/terraform.tfstate')
+// * TF_REMOTE_S3_REGION: The AWS Region where is is stored. (e.g. 'us-east-1')
+
+// Plan/Apply:
+// * TF_APPLY_AWS_CREDS: A User/Password Credential for planning/applying, where the username is the AWS Access Key
+//                       and the password is the Secret Key.
+// * TF_APPLY_ARGS:      The full set of arguments to use when planning or applying Terraform.
 
 node {
-    stage "Check Out Project"
-
-    git credentialsId: gitCredsId, url: gitUrl
-
-    stage 'Remote Config'
-    terraform "version"
-
-    tfRemoteConfig()
-
-    stage 'Get Modules'
+    stage "Setup"
+    // Check out the project
+    git credentialsId: GIT_CREDS_ID, url: GIT_URL
+    // Pull the remote config
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: TF_REMOTE_AWS_CREDS, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+        tfRemoteConfig()
+    }
+    // Update any modules
     terraform "get -update=true"
 
-    stage 'Update state'
-    terraform "refresh -input=false ${tfVarsDirect}"
+    withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: TF_APPLY_AWS_CREDS, usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+        stage 'Plan'
+        terraform "plan -input=false ${TF_APPLY_ARGS}"
+        input 'Apply the plan?'
 
-    stage 'Plan Infrastructure'
-    terraform "plan -input=false ${tfVarsDirect}"
-    input 'Apply the plan?'
-
-    stage 'Apply Infrastructure'
-    terraform "apply -input=false ${tfVarsDirect}"
+        stage 'Apply'
+        terraform "apply -input=false ${TF_APPLY_ARGS}"
+    }
 }
 
-def getGitUrl() {
-    "${GIT_URL}"
-}
-
-def getGitCredsId() {
-    "${GIT_CREDS_ID}"
+boolean hasRemoteConfig() {
+    def terraformState = "${workingDirectory}/${instanceSubDir}/.terraform/terraform.tfstate"
+    if (fileExists(terraformState)) {
+        def config = new JsonSlurper().parseText(readFile(terraformState))
+        return config && config.remote
+    }
+    return false
 }
 
 def tfRemoteConfig() {
-    withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}", "AWS_SECRET_ACCESS_KEY=${awsSecretKey}"]) {
-        sh "(head -n20 ${workingDirectory}/${instanceSubDir}/.terraform/terraform.tfstate 2>/dev/null | grep -q remote) || ${terraformCmd} remote config ${tfRemoteArgs}"
+    if (!hasRemoteConfig()) {
+        terraform "remote config ${tfRemoteArgs}"
+    } else {
         terraform "remote pull"
     }
 }
 
 def terraform(String tfArgs) {
-    withEnv(["AWS_ACCESS_KEY_ID=${awsAccessKey}", "AWS_SECRET_ACCESS_KEY=${awsSecretKey}"]) {
-        sh "${terraformCmd} ${tfArgs}"
-    }
+    sh "${terraformCmd} ${tfArgs}"
 }
 
-String getTerraformCmd() {
-    "docker run --rm -v ${workingDirectory}:${tempDirectory} -w=${tempDirectory}/${instanceSubDir} -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY hashicorp/terraform:${tfVersion}"
+def getTerraformCmd() {
+    "set +x; docker run --rm -v ${workingDirectory}:${tempDirectory} -w=${tempDirectory}/${instanceSubDir} -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY hashicorp/terraform:${tfVersion}"
 }
 
-String getId() {
+def getId() {
     "${env.JOB_NAME}-${env.BUILD_ID}"
-}
-
-String getAwsAccessKey() {
-    "${AWS_ACCESS_KEY}"
-}
-
-String getAwsSecretKey(Map params = null) {
-    def value = ""
-    if (params?.awsSecretKey) {
-        value = params.awsSecretKey
-    } else {
-        if (AWS_SECRET_KEY_ID) {
-            withCredentials([[$class: 'StringBinding', credentialsId: AWS_SECRET_KEY_ID, variable: 'awsSecretKey']]) {
-                value = "${env.awsSecretKey}"
-            }
-        }
-    }
-    value
 }
 
 String getTempDirectory() {
@@ -112,56 +97,3 @@ String getTfRemoteArgs() {
         "${TF_REMOTE_ARGS ?: ''}"
     }
 }
-
-String getTfVarsDirect() {
-    "${TF_VARS_DIRECT ?: ''}"
-}
-
-String getTfVars() {
-    // Add values from JSON in 'TF_VARS'
-    Map<String, Object> varsMap = getTfVarsMap()
-    Map<String, Object> resolved = [:]
-
-    // Look up any credentials where the variable name ends with '*'
-    for (entry in varsMap) {
-        String key = entry.key
-        Object value = entry.value
-        if (value.startsWith('$')) {
-            // variable values matching '$...' are property lookups
-            def propertyName = value.substring(1)
-            if (propertyName.startsWith('*')) {
-                // property lookups starting with '*' are credential lookups
-                propertyName = propertyName.substring(1)
-                println "Looking up '${propertyName}' credential for -var '${key}'"
-                withCredentials([[$class: 'StringBinding', credentialsId: propertyName, variable: 'cred']]) {
-                    // Only update it if the credential can be found.
-                    if (env.cred != null)
-                        value = env.cred
-                }
-            } else {
-                println "Looking up '${propertyName}' property for -var '${key}'"
-                def property = getProperty(propertyName)
-                // Only update it if the property exists.
-                if (property != null)
-                    value = property
-            }
-        }
-        resolved.put key, value
-    }
-
-    StringBuilder varString = new StringBuilder()
-    resolved.each { key, value ->
-        varString.append " -var '${key}=${value}'"
-    }
-    return varString.toString()
-}
-
-Map<String, Object> getTfVarsMap() {
-    // Slurp the JSON from TF_VARS
-    def vars = TF_VARS as String
-    if (vars && vars.trim().length() > 0) {
-        vars = new JsonSlurper().parseText(vars as String)
-    }
-    vars
-}
-
